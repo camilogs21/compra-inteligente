@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compra Inteligente</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="app">
+
+    <div class="header">
+      <div class="logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+      </div>
+      <h1>Compra Inteligente</h1>
+      <p>Compare preços entre mercados e economize</p>
+    </div>
+
+    <!-- Formulário -->
+    <div class="card">
+      <div class="card-title">Adicionar item</div>
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label for="inp-produto">Produto</label>
+          <div class="input-row">
+            <input id="inp-produto" type="text" placeholder="Ex: Arroz 5kg ou escaneie →" />
+            <button class="btn-scan" onclick="openScanner()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/>
+                <rect x="3" y="16" width="5" height="5"/>
+                <line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/>
+                <line x1="9" y1="3" x2="9" y2="9"/><line x1="9" y1="21" x2="9" y2="15"/>
+                <line x1="3" y1="9" x2="9" y2="9"/><line x1="15" y1="9" x2="21" y2="9"/>
+              </svg>
+              Escanear
+            </button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="inp-mercado">Mercado</label>
+          <input id="inp-mercado" type="text" placeholder="Ex: Carrefour" />
+        </div>
+        <div class="form-field">
+          <label for="inp-preco">Preço (R$)</label>
+          <input id="inp-preco" type="number" step="0.01" placeholder="0,00" />
+        </div>
+        <div class="form-field">
+          <label for="inp-qtd">Quantidade</label>
+          <input id="inp-qtd" type="number" step="1" placeholder="1" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="addItem()">+ Adicionar</button>
+        <button class="btn-ghost" onclick="clearAll()">Limpar tudo</button>
+      </div>
+    </div>
+
+    <!-- Economia -->
+    <div id="savings-section" class="hidden">
+      <div class="savings-bar">
+        <span class="savings-label">Economia possível escolhendo os melhores preços</span>
+        <span class="savings-amount" id="savings-val">R$ 0,00</span>
+      </div>
+    </div>
+
+    <!-- Comparações -->
+    <div class="card">
+      <div class="card-title">Comparação por produto</div>
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="2"/>
+          </svg>
+        </div>
+        Adicione um produto em dois mercados para comparar
+      </div>
+      <div id="compare-content"></div>
+    </div>
+
+    <!-- Lista Final -->
+    <div class="card hidden" id="final-card">
+      <div class="card-title">Lista final — menores preços</div>
+      <div id="final-content"></div>
+      <button class="btn-pdf" onclick="downloadPDF()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Baixar lista em PDF
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Scanner Modal -->
+  <div class="scanner-modal" id="scanner-modal">
+    <div class="scanner-box">
+      <div class="scanner-header">
+        <h3>Escanear código de barras</h3>
+        <button class="btn-close" onclick="closeScanner()">×</button>
+      </div>
+      <div class="scanner-overlay scan-corners">
+        <video id="scanner-video" autoplay playsinline muted></video>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scan-tip" id="scan-tip">Aponte a câmera para o código de barras</div>
+      <div class="scan-status" id="scan-status"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
