@@ -584,3 +584,83 @@ body {
   .form-field.span-2 { grid-column: span 1; }
   .savings-bar { flex-direction: column; gap: 6px; text-align: center; }
 }
+
+/* ============================
+   Botão excluir item
+   ============================ */
+.btn-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  padding: 3px 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+  margin-top: 2px;
+}
+
+.btn-delete:hover {
+  color: #E24B4A;
+  background: #FCEBEB;
+}
+
+/* ============================
+   Botão secundário (salvar/carregar)
+   ============================ */
+.btn-secondary {
+  flex: 1;
+  padding: 9px 12px;
+  background: transparent;
+  color: var(--green-700);
+  border: 0.5px solid var(--green-400);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.btn-secondary:hover {
+  background: var(--green-50);
+}
+
+/* ============================
+   Toast de notificação
+   ============================ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--gray-900);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 30px;
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 9999;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.toast-success {
+  background: var(--green-700);
+}
+
+.toast.toast-error {
+  background: #A32D2D;
+}

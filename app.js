@@ -79,7 +79,6 @@ function render() {
     const items = lista.filter(i => i.prod === prod);
     const minUnit = Math.min(...items.map(i => i.unit));
     const hasMultiple = items.length > 1;
-
     const sorted = [...items].sort((a, b) => a.unit - b.unit);
 
     html += `<div class="product-group">`;
@@ -91,8 +90,9 @@ function render() {
     sorted.forEach(item => {
       const isBest = Math.abs(item.unit - minUnit) < 0.001;
       if (!isBest) economia += (item.unit - minUnit) * item.qtd;
-
       const diff = fmt((item.unit - minUnit) * item.qtd);
+      // find real index in lista for deletion
+      const idx = lista.indexOf(item);
 
       html += `
         <div class="compare-row ${isBest ? 'best' : 'worst'}">
@@ -106,6 +106,11 @@ function render() {
               ? `<span class="badge-best">Menor preço</span>`
               : `<span class="badge-worst">+${diff}</span>`
             }
+            <button class="btn-delete" onclick="deleteItem(${idx})" title="Remover item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
           </div>
         </div>`;
     });
@@ -124,6 +129,14 @@ function render() {
   }
 
   renderFinal(products);
+}
+
+// ============================
+// Excluir item
+// ============================
+function deleteItem(idx) {
+  lista.splice(idx, 1);
+  render();
 }
 
 // ============================
@@ -156,6 +169,66 @@ function renderFinal(products) {
 
   document.getElementById('final-content').innerHTML = html;
   document.getElementById('final-card').classList.remove('hidden');
+}
+
+// ============================
+// Salvar / Carregar lista
+// ============================
+function saveList() {
+  if (!lista.length) return;
+  const json = JSON.stringify(lista, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'lista-compras.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerLoadList() {
+  document.getElementById('inp-upload').click();
+}
+
+function loadList(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('formato inválido');
+      // valida campos mínimos
+      data.forEach(item => {
+        if (!item.prod || !item.merc || isNaN(item.preco) || isNaN(item.qtd)) {
+          throw new Error('item inválido');
+        }
+        item.unit = item.preco / item.qtd;
+      });
+      lista = data;
+      render();
+      showToast('Lista carregada com sucesso!');
+    } catch (err) {
+      showToast('Arquivo inválido. Use um JSON gerado por este app.', true);
+    }
+    // reset input so same file can be reloaded
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg, isError = false) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.className   = 'toast ' + (isError ? 'toast-error' : 'toast-success');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 // ============================
@@ -317,39 +390,29 @@ function downloadPDF() {
 // ============================
 // Scanner / Câmera
 // ============================
+
 async function lookupBarcode(code) {
-  setStatus('Buscando produto na base...', 'loading');
+  setStatus('Buscando produto...', 'loading');
+
+  // Chama a Vercel Function — o token Cosmos fica seguro no servidor
   try {
-    const res = await fetch('https://world.openfoodfacts.org/api/v0/product/' + code + '.json');
+    const res  = await fetch('/api/produto?code=' + encodeURIComponent(code));
     const data = await res.json();
 
-    if (data.status === 1 && data.product) {
-      const p = data.product;
-      const name = p.product_name_pt || p.product_name || p.generic_name_pt || p.generic_name || '';
-      const brand = p.brands || '';
-      const qty = p.quantity || '';
-
-      if (name) {
-        let full = name;
-        if (brand && !name.toLowerCase().includes(brand.toLowerCase())) full = brand + ' ' + name;
-        if (qty) full += ' ' + qty;
-        full = full.trim();
-
-        document.getElementById('inp-produto').value = full;
-        setStatus('Encontrado: ' + full, 'success');
-        setTimeout(closeScanner, 1800);
-        return;
-      }
+    if (data.found && data.name) {
+      document.getElementById('inp-produto').value = data.name;
+      setStatus('Encontrado: ' + data.name, 'success');
+      setTimeout(closeScanner, 1800);
+      return;
     }
-
-    document.getElementById('inp-produto').value = code;
-    setStatus('Não encontrado. Código: ' + code + '. Edite o nome.', 'warn');
-    setTimeout(closeScanner, 2200);
   } catch (e) {
-    document.getElementById('inp-produto').value = code;
-    setStatus('Sem conexão. Código: ' + code + '. Edite o nome.', 'warn');
-    setTimeout(closeScanner, 2200);
+    // erro de rede
   }
+
+  // Não encontrado em nenhuma base
+  document.getElementById('inp-produto').value = code;
+  setStatus('Produto não encontrado. Código: ' + code + '. Edite o nome.', 'warn');
+  setTimeout(closeScanner, 2400);
 }
 
 async function openScanner() {
